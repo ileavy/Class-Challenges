@@ -1,0 +1,67 @@
+---
+title: "Feb-11"
+format: html
+editor: visual
+---
+
+## Data Wrangling Challenge, Feb 11
+
+Packages
+
+```{r}
+library(tidyverse)
+library(fuzzyjoin)
+```
+
+Create a new .qmd or .R script.
+
+Write code that will...
+
+-   Load in the following datasets: "sample_gps_data.csv" as gps and "sample_behavioral_data" as beh
+
+-   extract the year from the Date.Time column in beh as Year
+
+-   Filter beh for data from 2012-2014
+
+-   Join beh and gps matching on the Date.Time and Observer columns
+
+-   Convert Mean.Latitude and Mean.Longitude to UTM coordinates \[check slides\]
+
+-   Choose one animal name and find all the locations where that animal is the Focal.Animal
+
+-   Make a scatterplot of the location records for that animal (x should be UTM version of Mean.Logitude and y should be UTM version of Mean.Latitude)
+
+Bonus:
+
+-   Split the Group.Comp into separate columns
+
+-   Choose one animal name and find all the locations where that animal appears in any of the split Group.Comp columns
+
+```{r}
+f1 <- "https://raw.githubusercontent.com/difiore/ada-datasets/main/sample_gps_data.csv"
+f2 <- "https://raw.githubusercontent.com/difiore/ada-datasets/main/sample_behavioral_data.csv"
+
+gps <- read_csv(f1, col_names = TRUE)
+beh <- read_csv(f2, col_names = TRUE)
+head(gps)
+head(beh)
+
+beh <- beh |> 
+  mutate(Year = Date.Time) |>
+           separate_wider_delim(
+             cols = Year,
+             delim = "-",
+             names = "Year",
+             too_many = "drop"
+           )
+
+beh <- beh |> 
+  filter(Year >= 2012
+         & Year <= 2014)
+View(beh)
+
+join.gps.beh <- regex_join(beh, gps, by = c("Date.Time" = "Date.Time", "Observer" = "Observer"))
+head(join.gps.beh)
+
+
+```
