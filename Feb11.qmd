@@ -11,6 +11,9 @@ Packages
 ```{r}
 library(tidyverse)
 library(fuzzyjoin)
+
+install.packages("oce")
+library(oce)
 ```
 
 Create a new .qmd or .R script.
@@ -31,12 +34,6 @@ Write code that will...
 
 -   Make a scatterplot of the location records for that animal (x should be UTM version of Mean.Logitude and y should be UTM version of Mean.Latitude)
 
-Bonus:
-
--   Split the Group.Comp into separate columns
-
--   Choose one animal name and find all the locations where that animal appears in any of the split Group.Comp columns
-
 ```{r}
 f1 <- "https://raw.githubusercontent.com/difiore/ada-datasets/main/sample_gps_data.csv"
 f2 <- "https://raw.githubusercontent.com/difiore/ada-datasets/main/sample_behavioral_data.csv"
@@ -46,6 +43,7 @@ beh <- read_csv(f2, col_names = TRUE)
 head(gps)
 head(beh)
 
+#create Year column
 beh <- beh |> 
   mutate(Year = Date.Time) |>
            separate_wider_delim(
@@ -55,13 +53,42 @@ beh <- beh |>
              too_many = "drop"
            )
 
+#filter only 2012-2014
 beh <- beh |> 
   filter(Year >= 2012
          & Year <= 2014)
 View(beh)
 
-join.gps.beh <- regex_join(beh, gps, by = c("Date.Time" = "Date.Time", "Observer" = "Observer"))
-head(join.gps.beh)
+#join beh and gps data based on time and observer
+joined <- inner_join(beh, gps, by = c("Date.Time" = "Date.Time", "Observer" = "Observer"))
+head(joined)
 
+#requires oce package
+joined <- joined |> mutate(
+  easting = lonlat2utm(Mean.Longitude, Mean.Latitude)$easting,
+  northing = lonlat2utm(Mean.Longitude, Mean.Latitude)$northing + 10000000
+)
 
+#choose an animal, find when they are focal
+unique(joined$Focal.Animal)
+taiga <- joined |> filter(
+  Focal.Animal == "Taiga"
+)
+
+#scatterplot
+p <- ggplot(taiga, aes(x = easting, y = northing)) + 
+  geom_point()+
+  labs( title = "Location Data for Taiga", x = "Latitude (UTM)", y = "Longitude (UTM)")+
+  theme_bw()
+
+p
+
+#if i wanted to make this more replicable i could instead set animal <- "Taiga", set the dataframe to focal, and then use the variable animal from then on to set it 
+#this would allow me to loop through the focal.animal column and do more iterative stuff with the code... but right now i feel lazy 
 ```
+
+Bonus:
+
+-   Split the Group.Comp into separate columns
+
+-   Choose one animal name and find all the locations where that animal appears in any of the split Group.Comp columns
